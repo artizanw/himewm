@@ -1,1 +1,1 @@
-TODO: write the actual README
+# himewm
