@@ -51,9 +51,27 @@ name = "himewm"
 version = "0.1.0"
 dependencies = [
  "directories",
+ "himewm_layout",
  "serde",
  "serde_json",
  "windows",
+]
+
+[[package]]
+name = "himewm_layout"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "windows",
+]
+
+[[package]]
+name = "himewm_layout_editor"
+version = "0.1.0"
+dependencies = [
+ "directories",
+ "himewm_layout",
+ "serde_json",
 ]
 
 [[package]]

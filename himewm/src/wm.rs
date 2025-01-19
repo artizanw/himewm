@@ -1,3 +1,5 @@
+use himewm_layout::*;
+
 use serde::{
 
     Deserialize,
@@ -78,13 +80,34 @@ impl Workspace {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+struct Colour {
+    r: u8,
+    g: u8,
+    b: u8,
+}
+
+impl Colour {
+    
+    fn as_colorref(&self) -> COLORREF {
+
+        COLORREF (
+            self.r as u32 |
+            (self.g as u32) << 8 |
+            (self.b as u32) << 16
+        )
+
+    }
+
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Settings {
     default_layout_idx: usize,
     window_padding: i32,
     edge_padding: i32,
     disable_rounding: bool,
     disable_unfocused_border: bool,
-    focused_border_colour: u32
+    focused_border_colour: Colour
 }
 
 impl Default for Settings {
@@ -97,85 +120,14 @@ impl Default for Settings {
             edge_padding: 0,
             disable_rounding: false,
             disable_unfocused_border: false,
-            focused_border_colour: 0x00FFFFFF,
+            focused_border_colour: Colour { r: 255, g: 255, b: 255 },
         }
     
     }
+
 }
 
 impl Settings {
-
-    pub fn get_default_layout_idx(&self) -> usize {
-
-        self.default_layout_idx
-
-    }
-
-    pub fn set_default_layout_idx(&mut self, val: usize) {
-
-        self.default_layout_idx = val;
-
-    }
-
-    pub fn get_window_padding(&self) -> i32 {
-
-        self.window_padding
-
-    }
-
-    pub fn set_window_padding(&mut self, val: i32) {
-
-        self.window_padding = val;
-
-    }
-
-    pub fn get_edge_padding(&self) -> i32 {
-
-        self.edge_padding
-
-    }
-
-    pub fn set_edge_padding(&mut self, val: i32) {
-
-        self.edge_padding = val;
-
-    }
-
-    pub fn get_disable_rounding(&self) -> bool {
-
-        self.disable_rounding
-
-    }
-
-    pub fn set_disable_rounding(&mut self, val: bool) {
-
-        self.disable_rounding = val;
-
-    }
-
-    pub fn get_disable_unfocused_border(&self) -> bool {
-
-        self.disable_unfocused_border
-
-    }
-
-    pub fn set_disable_unfocused_border(&mut self, val: bool) {
-
-        self.disable_unfocused_border = val;
-
-    }
-
-    pub fn get_focused_border_colour(&self) -> u32 {
-
-        self.focused_border_colour
-
-    }
-
-    pub fn set_focused_border_colour(&mut self, val: u32) {
-
-        self.focused_border_colour = val;
-
-    }
 
     fn get_unfocused_border_colour(&self) -> COLORREF {
 
@@ -202,7 +154,7 @@ pub struct WindowManager {
     hwnd_locations: std::collections::HashMap<*mut core::ffi::c_void, (GUID, HMONITOR, bool, usize)>, 
     workspaces: std::collections::HashMap<(GUID, *mut core::ffi::c_void), Workspace>,
     foreground_hwnd: Option<HWND>,
-    layouts: std::collections::HashMap<*mut core::ffi::c_void, Vec<crate::layout::LayoutGroup>>,
+    layouts: std::collections::HashMap<*mut core::ffi::c_void, Vec<LayoutGroup>>,
     settings: Settings,
     grabbed_window: Option<HWND>,
     ignored_combinations: std::collections::HashSet<(GUID, *mut core::ffi::c_void)>,
@@ -231,7 +183,7 @@ impl WindowManager {
             
     }
 
-    pub unsafe fn initialize(&mut self, layout_groups: Vec<crate::layout::LayoutGroup>) {
+    pub unsafe fn initialize(&mut self, layout_groups: Vec<LayoutGroup>) {
 
         let _ = EnumDisplayMonitors(None, None, Some(Self::enum_display_monitors_callback), LPARAM(self as *mut WindowManager as isize));
         
@@ -239,7 +191,7 @@ impl WindowManager {
 
             for (hmonitor, layouts) in self.layouts.iter_mut() {
 
-                let mut layout = match crate::layout::LayoutGroup::convert_for_monitor(&layout_group, HMONITOR(*hmonitor)) {
+                let mut layout = match LayoutGroup::convert_for_monitor(&layout_group, HMONITOR(*hmonitor)) {
 
                     Some(val) => val,
                     
@@ -271,11 +223,11 @@ impl WindowManager {
 
     }
 
-    pub unsafe fn add_layout_group(&mut self, layout_group: crate::layout::LayoutGroup) {
+    pub unsafe fn add_layout_group(&mut self, layout_group: LayoutGroup) {
         
         for (hmonitor, layouts) in self.layouts.iter_mut() {
 
-            let mut layout = match crate::layout::LayoutGroup::convert_for_monitor(&layout_group, HMONITOR(*hmonitor)) {
+            let mut layout = match LayoutGroup::convert_for_monitor(&layout_group, HMONITOR(*hmonitor)) {
                 
                 Some(val) => val,
             
@@ -1908,9 +1860,9 @@ impl WindowManager {
         
         if let Some(v) = error_indices {
 
-            for i in v {
+            for (i, error_idx) in v.iter().enumerate() {
 
-                workspace.managed_window_handles.remove(i);
+                workspace.managed_window_handles.remove(*error_idx - i);
 
             }
 
@@ -2000,7 +1952,7 @@ impl WindowManager {
 
     unsafe fn set_border_to_focused(&self, hwnd: HWND) {
 
-        let _ = DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &COLORREF(self.settings.focused_border_colour) as *const COLORREF as *const core::ffi::c_void, std::mem::size_of_val(&COLORREF(self.settings.focused_border_colour)) as u32);
+        let _ = DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &self.settings.focused_border_colour.as_colorref() as *const COLORREF as *const core::ffi::c_void, std::mem::size_of_val(&self.settings.focused_border_colour.as_colorref()) as u32);
 
     }
 

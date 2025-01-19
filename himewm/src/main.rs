@@ -16,8 +16,6 @@ use windows::Win32::{
 
 };
 
-mod layout;
-
 mod wm;
 
 mod init;

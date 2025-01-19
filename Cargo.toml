@@ -2,4 +2,6 @@
 
 members = [
 	"himewm",
+	"himewm_layout",
+	"himewm_layout_editor",
 ]

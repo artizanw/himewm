@@ -1,0 +1,10 @@
+[package]
+name = "himewm_layout_editor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+himewm_layout = { path = "../himewm_layout" }
+
+directories = "6.0.0"
+serde_json = "1.0.136"

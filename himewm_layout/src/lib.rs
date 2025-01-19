@@ -155,25 +155,15 @@ pub struct Layout {
 
 impl Layout {
     
-    unsafe fn new(hmonitor: HMONITOR) -> Self {
+    fn new(w: i32, h: i32) -> Self {
 
-        let mut monitor_info = MONITORINFO::default();
-
-        monitor_info.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
-
-        let _ = GetMonitorInfoA(hmonitor, &mut monitor_info);
-
-        let mut ret = Layout {
-            monitor_rect: Zone::from_rect(monitor_info.rcWork),
-            zones: Vec::new(),
+        Layout {
+            monitor_rect: Zone::new(0, 0, w, h),
+            zones: vec![vec![Zone::new(0, 0, w, h)]],
             manual_zones_until: 1,
             end_tiling_behaviour: EndTilingBehaviour::default_directional(),
             positions: Vec::new(),
-        };
-
-        ret.zones.push(vec![ret.monitor_rect.clone()]);
-
-        return ret;
+        }
     
     }
     
@@ -765,10 +755,10 @@ pub struct LayoutGroup {
 
 impl LayoutGroup {
 
-    pub unsafe fn new(hmonitor: HMONITOR) -> Self {
+    pub fn new(w: i32, h: i32) -> Self {
 
         LayoutGroup {
-            layouts: vec![Layout::new(hmonitor)],
+            layouts: vec![Layout::new(w, h)],
             default_idx: 0,
         }
 
@@ -820,7 +810,7 @@ impl LayoutGroup {
 
         monitor_info.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
 
-        GetMonitorInfoA(hmonitor, &mut monitor_info);
+        let _ = GetMonitorInfoA(hmonitor, &mut monitor_info);
         
         let monitor_rect = Zone::from_rect(monitor_info.rcWork);
 

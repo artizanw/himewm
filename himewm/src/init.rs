@@ -1,5 +1,7 @@
 use directories::BaseDirs;
 
+use himewm_layout::*;
+
 struct Directories {
     config_dir: std::path::PathBuf,
     layouts_dir: std::path::PathBuf,
@@ -81,7 +83,7 @@ pub fn initialize_settings() -> crate::wm::Settings {
 
 }
 
-pub fn initialize_layouts() -> Option<Vec<crate::layout::LayoutGroup>> {
+pub fn initialize_layouts() -> Option<Vec<LayoutGroup>> {
     
     let mut ret = Vec::new();
 
@@ -97,7 +99,7 @@ pub fn initialize_layouts() -> Option<Vec<crate::layout::LayoutGroup>> {
                     
                     Ok(byte_vector) => {
 
-                        let layout_group: crate::layout::LayoutGroup = match serde_json::from_slice(byte_vector.as_slice()) {
+                        let layout_group: LayoutGroup = match serde_json::from_slice(byte_vector.as_slice()) {
                             
                             Ok(val) => val,
                         
