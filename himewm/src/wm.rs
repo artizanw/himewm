@@ -40,6 +40,8 @@ use windows::{
 
 };
 
+const CREATE_RETRIES: i32 = 100;
+
 pub mod messages {
 
     use windows::Win32::UI::WindowsAndMessaging::WM_APP;
@@ -309,28 +311,33 @@ impl WindowManager {
 
             None => {
 
-                let start_instant = std::time::Instant::now();
+                let mut count = 0;
 
-                'timeout: loop {
-                    
-                    while std::time::Instant::now() - start_instant < std::time::Duration::from_secs(1) {
-                        
-                        match self.virtual_desktop_manager.GetWindowDesktopId(hwnd) {
+                loop {
 
-                            Ok(guid) if guid != GUID::zeroed() => {
+                    match self.virtual_desktop_manager.GetWindowDesktopId(hwnd) {
 
-                                window_desktop_id = guid;
+                        Ok(guid) if guid != GUID::zeroed() => {
+                            
+                            window_desktop_id = guid;
 
-                                break 'timeout;
+                            break;
 
-                            },
+                        },
 
-                            _ => continue,
-                        }
-                        
+                        _ => {
+
+                            count += 1;
+
+                        },
+
                     }
 
-                    return;
+                    if count == CREATE_RETRIES {
+
+                        return;
+
+                    }
 
                 }
 
@@ -1800,7 +1807,7 @@ impl WindowManager {
 
         }
 
-        let workspace = match self.workspaces.get_mut(&(guid, hmonitor.0)) {
+        let workspace = match self.workspaces.get(&(guid, hmonitor.0)) {
             
             Some(w) => w,
             
@@ -1857,12 +1864,12 @@ impl WindowManager {
             }
 
         }
-        
+
         if let Some(v) = error_indices {
 
             for (i, error_idx) in v.iter().enumerate() {
 
-                workspace.managed_window_handles.remove(*error_idx - i);
+                self.remove_hwnd(guid, hmonitor, *error_idx - i);
 
             }
 

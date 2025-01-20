@@ -675,6 +675,12 @@ impl Layout {
                 
                 }
 
+                for i in ((zone_idx + 1)..(self.zones.len() - 1)).rev() {
+
+                    self.swap_zones(self.zones.len() - 1, zone_idx, i);
+
+                }
+
             },
 
             EndTilingBehaviour::Repeating { splits, zone_idx } => {
