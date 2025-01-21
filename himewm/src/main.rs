@@ -6,19 +6,29 @@ use windows::Win32::{
     
     UI::{
 
+        Accessibility::*,
+
         Input::KeyboardAndMouse::*, 
 
         WindowsAndMessaging::*
 
     },
 
-    System::Console::*
+    System::{
+
+        Com::*,
+
+        Console::*
+
+    }
 
 };
 
 mod wm;
 
 mod init;
+
+mod tray_menu;
 
 mod hotkey_identifiers {
 
@@ -244,7 +254,7 @@ unsafe fn handle_message(msg: MSG, wm: &mut wm::WindowManager) {
 
 }
 
-unsafe fn show_message(message: &str) {
+unsafe fn show_error_message(message: &str) {
 
     let _free_console = FreeConsole();
 
@@ -284,7 +294,7 @@ fn main() {
         
             None => {
                 
-                show_message("No layouts found");
+                show_error_message("No layouts found");
 
                 return;
 
@@ -294,17 +304,27 @@ fn main() {
 
         register_hotkeys();
 
+        let _create_tray_icon = tray_menu::create();
+
         let mut wm = wm::WindowManager::new(settings);
 
         wm.initialize(layout_groups);
 
-        loop {
-            
-            GetMessageA(&mut msg, None, 0, 0);
+        while GetMessageA(&mut msg, None, 0, 0).as_bool() {
 
             handle_message(msg, &mut wm);
 
+            let _translate_message = TranslateMessage(&msg);
+
+            DispatchMessageA(&msg);
+
+            tray_menu::handle_events();
+
         }
+
+        let _unhook_win_event = UnhookWinEvent(wm.event_hook);
+
+        CoUninitialize();
 
     }
 

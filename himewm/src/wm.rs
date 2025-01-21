@@ -150,8 +150,8 @@ impl Settings {
 }
 
 pub struct WindowManager {
+    pub event_hook: HWINEVENTHOOK,
     virtual_desktop_manager: IVirtualDesktopManager,
-    event_hook: HWINEVENTHOOK,
     hmonitors: Vec<HMONITOR>,
     hwnd_locations: std::collections::HashMap<*mut core::ffi::c_void, (GUID, HMONITOR, bool, usize)>, 
     workspaces: std::collections::HashMap<(GUID, *mut core::ffi::c_void), Workspace>,
@@ -170,8 +170,8 @@ impl WindowManager {
         let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
 
         WindowManager {
-            virtual_desktop_manager: CoCreateInstance(&VirtualDesktopManager, None, CLSCTX_INPROC_SERVER).unwrap(),
             event_hook: SetWinEventHook(EVENT_MIN, EVENT_MAX, None, Some(Self::event_handler), 0, 0, WINEVENT_OUTOFCONTEXT),
+            virtual_desktop_manager: CoCreateInstance(&VirtualDesktopManager, None, CLSCTX_INPROC_SERVER).unwrap(),
             hmonitors: Vec::new(),
             hwnd_locations: std::collections::HashMap::new(),
             workspaces: std::collections::HashMap::new(),

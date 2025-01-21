@@ -8,3 +8,4 @@ himewm_layout = { path = "../himewm_layout" }
 
 directories = "6.0.0"
 serde_json = "1.0.136"
+fltk = "1.5.2"
