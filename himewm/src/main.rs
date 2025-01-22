@@ -306,6 +306,8 @@ fn main() {
 
         let _create_tray_icon = tray_menu::create();
 
+        tray_menu::set_menu_event_handler();
+
         let mut wm = wm::WindowManager::new(settings);
 
         wm.initialize(layout_groups);
@@ -317,8 +319,6 @@ fn main() {
             let _translate_message = TranslateMessage(&msg);
 
             DispatchMessageA(&msg);
-
-            tray_menu::handle_events();
 
         }
 

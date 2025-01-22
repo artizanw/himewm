@@ -45,9 +45,9 @@ pub fn create() -> tray_icon::Result<TrayIcon> {
 
 }
 
-pub unsafe fn handle_events() {
+pub unsafe fn set_menu_event_handler() {
 
-    if let Ok(event) = MenuEvent::receiver().try_recv() {
+    MenuEvent::set_event_handler(Some(|event: MenuEvent| {
 
         match event.id().as_ref() {
             
@@ -61,6 +61,7 @@ pub unsafe fn handle_events() {
 
         }
 
-    }
+
+    }));
 
 }
