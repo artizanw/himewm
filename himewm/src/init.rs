@@ -40,7 +40,7 @@ pub fn create_dirs() -> std::io::Result<()> {
 
 }
 
-pub fn initialize_settings() -> crate::wm::Settings {
+pub fn initialize_settings() -> himewm::Settings {
     
     let dirs = Directories::new();
 
@@ -48,7 +48,7 @@ pub fn initialize_settings() -> crate::wm::Settings {
         
         Ok(byte_vector) => {
 
-            match serde_json::from_slice::<crate::wm::Settings>(byte_vector.as_slice()) {
+            match serde_json::from_slice::<himewm::Settings>(byte_vector.as_slice()) {
 
                 Ok(settings) => {
                     
@@ -58,7 +58,7 @@ pub fn initialize_settings() -> crate::wm::Settings {
 
                 Err(_) => {
 
-                    return crate::wm::Settings::default();
+                    return himewm::Settings::default();
 
                 },
 
@@ -70,7 +70,7 @@ pub fn initialize_settings() -> crate::wm::Settings {
 
             let settings_file = std::fs::File::create_new(dirs.config_dir.join("settings.json")).unwrap();
 
-            let default_settings = crate::wm::Settings::default();
+            let default_settings = himewm::Settings::default();
 
             let _ = serde_json::to_writer_pretty(settings_file, &default_settings);
 

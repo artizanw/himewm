@@ -166,6 +166,12 @@ impl Layout {
         }
     
     }
+
+    pub fn get_zones(&self) -> &Vec<Vec<Zone>> {
+
+        &self.zones
+
+    }
     
     pub fn delete_zones(&mut self, i: usize) {
         
@@ -197,7 +203,7 @@ impl Layout {
 
     }
 
-    pub fn get(&self, i: usize) -> &Vec<Position> {
+    pub fn get_positions_at(&self, i: usize) -> &Vec<Position> {
 
         &self.positions[i]
     

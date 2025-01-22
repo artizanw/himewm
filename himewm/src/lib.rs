@@ -746,13 +746,13 @@ impl WindowManager {
 
                 }
 
-                layout.get(workspace.managed_window_handles.len())
+                layout.get_positions_at(workspace.managed_window_handles.len())
 
             }
             
             else {
 
-                self.layouts.get(&original_monitor_id.0).unwrap()[workspace.layout_idx].get_layouts()[workspace.variant_idx].get(workspace.managed_window_handles.len() - 1)
+                self.layouts.get(&original_monitor_id.0).unwrap()[workspace.layout_idx].get_layouts()[workspace.variant_idx].get_positions_at(workspace.managed_window_handles.len() - 1)
 
             };
 
@@ -1833,7 +1833,7 @@ impl WindowManager {
 
         let mut error_indices: Option<Vec<usize>> = None;
 
-        let positions = layout.get(workspace.managed_window_handles.len() - 1);
+        let positions = layout.get_positions_at(workspace.managed_window_handles.len() - 1);
 
         for (i, hwnd) in workspace.managed_window_handles.iter().enumerate() {
 

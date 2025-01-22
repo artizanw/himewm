@@ -24,8 +24,6 @@ use windows::Win32::{
 
 };
 
-mod wm;
-
 mod init;
 
 mod tray_menu;
@@ -102,41 +100,41 @@ unsafe fn register_hotkeys() {
 
 }
 
-unsafe fn handle_message(msg: MSG, wm: &mut wm::WindowManager) {
+unsafe fn handle_message(msg: MSG, wm: &mut himewm::WindowManager) {
 
     match msg.message {
 
-        wm::messages::WINDOW_CREATED => {
+        himewm::messages::WINDOW_CREATED => {
 
             wm.window_created(HWND(msg.wParam.0 as *mut core::ffi::c_void));
 
         },
 
-        wm::messages::WINDOW_DESTROYED => {
+        himewm::messages::WINDOW_DESTROYED => {
 
             wm.window_destroyed(HWND(msg.wParam.0 as *mut core::ffi::c_void));
 
         },
 
-        wm::messages::WINDOW_MINIMIZED_OR_MAXIMIZED => {
+        himewm::messages::WINDOW_MINIMIZED_OR_MAXIMIZED => {
 
             wm.window_minimized_or_maximized(HWND(msg.wParam.0 as *mut core::ffi::c_void));
 
         },
 
-        wm::messages::WINDOW_CLOAKED => {
+        himewm::messages::WINDOW_CLOAKED => {
 
             wm.window_cloaked(HWND(msg.wParam.0 as *mut core::ffi::c_void));
 
         },
 
-        wm::messages::FOREGROUND_WINDOW_CHANGED => {
+        himewm::messages::FOREGROUND_WINDOW_CHANGED => {
 
             wm.foreground_window_changed(HWND(msg.wParam.0 as *mut core::ffi::c_void));
 
         },
 
-        wm::messages::WINDOW_MOVE_FINISHED => {
+        himewm::messages::WINDOW_MOVE_FINISHED => {
 
             wm.window_move_finished(HWND(msg.wParam.0 as *mut core::ffi::c_void));
 
@@ -308,7 +306,7 @@ fn main() {
 
         tray_menu::set_menu_event_handler();
 
-        let mut wm = wm::WindowManager::new(settings);
+        let mut wm = himewm::WindowManager::new(settings);
 
         wm.initialize(layout_groups);
 

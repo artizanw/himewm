@@ -5,3 +5,5 @@ members = [
 	"himewm_layout",
 	"himewm_layout_editor",
 ]
+
+resolver = "2"
