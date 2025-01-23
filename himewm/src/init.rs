@@ -204,9 +204,7 @@ pub fn initialize_layouts() -> Option<Vec<(std::path::PathBuf, LayoutGroup)>> {
                         
                         };
                         
-                        let mut layout_name = std::path::PathBuf::from(entry.file_name());
-
-                        layout_name.set_extension("");
+                        let layout_name = std::path::Path::new(&entry.file_name()).with_extension("");
 
                         ret.push((layout_name, layout_group));
 
