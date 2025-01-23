@@ -39,10 +39,13 @@ fn main_window() -> window::Window {
         let primary_screen = app::Screen::new(0).unwrap();
 
         let mut main_window = window::Window::new(
-            3*primary_screen.w()/8, 
-            primary_screen.h()/4, 
             primary_screen.w()/4, 
-            primary_screen.h()/2, "PLACEHOLDER");
+            primary_screen.h()/4, 
+            primary_screen.w()/2, 
+            primary_screen.h()/2, 
+            "PLACEHOLDER");
+
+        main_window.make_resizable(true);
 
         main_window.end();
 
