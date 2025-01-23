@@ -98,6 +98,19 @@ pub struct Zone {
     bottom: i32,
 }
 
+impl From<RECT> for Zone {
+    fn from(value: RECT) -> Self {
+
+        Zone {
+            left: value.left,
+            top: value.top,
+            right: value.right,
+            bottom: value.bottom,
+        }
+        
+    }
+}
+
 impl Zone {
     
     fn new(left: i32, top: i32, right: i32, bottom: i32) -> Self {
@@ -109,17 +122,6 @@ impl Zone {
             bottom,
         }
 
-    }
-
-    fn from_rect(val: RECT) -> Self {
-
-        Zone {
-            left: val.left,
-            top: val.top,
-            right: val.right,
-            bottom: val.bottom,
-        }
-        
     }
 
     fn w(&self) -> i32 {
@@ -824,7 +826,7 @@ impl LayoutGroup {
 
         let _ = GetMonitorInfoA(hmonitor, &mut monitor_info);
         
-        let monitor_rect = Zone::from_rect(monitor_info.rcWork);
+        let monitor_rect = Zone::from(monitor_info.rcWork);
 
         let layout = &layout_group.layouts[layout_group.default_idx];
 
