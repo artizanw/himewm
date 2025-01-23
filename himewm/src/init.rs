@@ -2,6 +2,16 @@ use directories::BaseDirs;
 
 use himewm_layout::*;
 
+use serde::{
+
+    Deserialize,
+
+    Serialize
+
+};
+
+use windows::Win32::Foundation::COLORREF;
+
 struct Directories {
     config_dir: std::path::PathBuf,
     layouts_dir: std::path::PathBuf,
@@ -28,6 +38,93 @@ impl Directories {
 
 }
 
+#[derive(Deserialize, Serialize)]
+struct Colour {
+    r: u8,
+    g: u8,
+    b: u8,
+}
+
+impl Colour {
+    
+    fn as_colorref(&self) -> COLORREF {
+
+        COLORREF (
+            self.r as u32 |
+            (self.g as u32) << 8 |
+            (self.b as u32) << 16
+        )
+
+    }
+
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct UserSettings {
+    default_layout: std::path::PathBuf,
+    window_padding: i32,
+    edge_padding: i32,
+    disable_rounding: bool,
+    disable_unfocused_border: bool,
+    focused_border_colour: Colour,
+}
+
+impl Default for UserSettings {
+
+    fn default() -> Self {
+
+        UserSettings {
+            default_layout: std::path::PathBuf::new(),
+            window_padding: 0,
+            edge_padding: 0,
+            disable_rounding: false,
+            disable_unfocused_border: false,
+            focused_border_colour: Colour { r: 255, g: 255, b: 255 },
+        }
+
+    }
+
+}
+
+impl UserSettings {
+    
+    pub fn to_settings(&self, layouts: &Vec<(std::path::PathBuf, himewm_layout::LayoutGroup)>) -> himewm::Settings {
+
+        if self.default_layout != std::path::Path::new("") {
+
+            for (idx, (p, _)) in layouts.iter().enumerate() {
+
+                if p == &self.default_layout {
+
+                    return himewm::Settings {
+                        default_layout_idx: idx,
+                        window_padding: self.window_padding,
+                        edge_padding: self.edge_padding,
+                        disable_rounding: self.disable_rounding,
+                        disable_unfocused_border: self.disable_unfocused_border,
+                        focused_border_colour: self.focused_border_colour.as_colorref(),
+                    };
+
+
+                }
+
+            }
+
+        }
+
+        return himewm::Settings {
+            default_layout_idx: 0,
+            window_padding: self.window_padding,
+            edge_padding: self.edge_padding,
+            disable_rounding: self.disable_rounding,
+            disable_unfocused_border: self.disable_unfocused_border,
+            focused_border_colour: self.focused_border_colour.as_colorref(),
+        };
+
+    }
+
+}
+
 pub fn create_dirs() -> std::io::Result<()> {
     
     let dirs = Directories::new();
@@ -40,7 +137,7 @@ pub fn create_dirs() -> std::io::Result<()> {
 
 }
 
-pub fn initialize_settings() -> himewm::Settings {
+pub fn initialize_settings() -> UserSettings {
     
     let dirs = Directories::new();
 
@@ -48,7 +145,7 @@ pub fn initialize_settings() -> himewm::Settings {
         
         Ok(byte_vector) => {
 
-            match serde_json::from_slice::<himewm::Settings>(byte_vector.as_slice()) {
+            match serde_json::from_slice::<UserSettings>(byte_vector.as_slice()) {
 
                 Ok(settings) => {
                     
@@ -58,7 +155,7 @@ pub fn initialize_settings() -> himewm::Settings {
 
                 Err(_) => {
 
-                    return himewm::Settings::default();
+                    return UserSettings::default();
 
                 },
 
@@ -70,11 +167,11 @@ pub fn initialize_settings() -> himewm::Settings {
 
             let settings_file = std::fs::File::create_new(dirs.config_dir.join("settings.json")).unwrap();
 
-            let default_settings = himewm::Settings::default();
+            let default_user_settings = UserSettings::default();
 
-            let _ = serde_json::to_writer_pretty(settings_file, &default_settings);
+            let _ = serde_json::to_writer_pretty(settings_file, &default_user_settings);
 
-            return default_settings;
+            return default_user_settings;
 
 
         },
@@ -83,7 +180,7 @@ pub fn initialize_settings() -> himewm::Settings {
 
 }
 
-pub fn initialize_layouts() -> Option<Vec<LayoutGroup>> {
+pub fn initialize_layouts() -> Option<Vec<(std::path::PathBuf, LayoutGroup)>> {
     
     let mut ret = Vec::new();
 
@@ -106,8 +203,12 @@ pub fn initialize_layouts() -> Option<Vec<LayoutGroup>> {
                             Err(_) => continue,
                         
                         };
+                        
+                        let mut layout_name = std::path::PathBuf::from(entry.file_name());
 
-                        ret.push(layout_group);
+                        layout_name.set_extension("");
+
+                        ret.push((layout_name, layout_group));
 
                     },
                 
