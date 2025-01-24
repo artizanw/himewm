@@ -92,10 +92,10 @@ impl RepeatingSplit {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Zone {
-    left: i32,
-    top: i32,
-    right: i32,
-    bottom: i32,
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    pub bottom: i32,
 }
 
 impl From<RECT> for Zone {
@@ -124,13 +124,13 @@ impl Zone {
 
     }
 
-    fn w(&self) -> i32 {
+    pub fn w(&self) -> i32 {
 
         self.right - self.left
     
     }
     
-    fn h(&self) -> i32 {
+    pub fn h(&self) -> i32 {
     
         self.bottom - self.top
     
@@ -169,9 +169,15 @@ impl Layout {
     
     }
 
-    pub fn get_zones(&self) -> &Vec<Vec<Zone>> {
+    pub fn get_zones_at(&self, idx: usize) -> &Vec<Zone> {
 
-        &self.zones
+        &self.zones[idx]
+
+    }
+
+    pub fn get_monitor_rect(&self) -> &Zone {
+
+        &self.monitor_rect
 
     }
     
