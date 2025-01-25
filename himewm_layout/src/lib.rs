@@ -169,9 +169,9 @@ impl Layout {
     
     }
 
-    pub fn get_zones_at(&self, idx: usize) -> &Vec<Zone> {
+    pub fn get_zones(&self) -> &Vec<Vec<Zone>> {
 
-        &self.zones[idx]
+        &self.zones
 
     }
 
