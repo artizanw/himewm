@@ -902,9 +902,9 @@ impl LayoutGroup {
         
     }
     
-    pub fn new_variant(&mut self) {
+    pub fn new_variant_from(&mut self, idx: usize) {
         
-        self.layouts.push(self.layouts[self.default_idx].clone());
+        self.layouts.push(self.layouts[idx].clone());
 
     }
 
