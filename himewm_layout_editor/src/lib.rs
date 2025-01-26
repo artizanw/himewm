@@ -1,20 +1,23 @@
-use std::clone;
-
 use enums::{Color, FrameType};
 use fltk::*;
 use fltk_theme::*;
-use group::ScrollType;
+use group::{PackType, ScrollType};
 use himewm_layout::*;
 use prelude::{GroupExt, WidgetBase, WidgetExt};
 
-type ArcRwLock<T> = std::sync::Arc<std::sync::RwLock<T>>;
+#[derive(Clone)]
+enum Message {
+    VariantChanged(usize),
+    ZonesChanged(usize),
+    ZoneChanged(usize)
+}
 
 struct LayoutEditor {
     layout_group: LayoutGroup,
-    selected_variant_idx: ArcRwLock<usize>,
-    selected_zones_idx: ArcRwLock<usize>,
-    selected_zone_idx1: Option<ArcRwLock<usize>>,
-    selected_zone_idx2: Option<ArcRwLock<usize>>,
+    selected_variant_idx: usize,
+    selected_zones_idx: usize,
+    selected_zone_idx1: Option<usize>,
+    selected_zone_idx2: Option<usize>,
 }
 
 impl LayoutEditor {
@@ -25,8 +28,8 @@ impl LayoutEditor {
 
         return LayoutEditor {
             layout_group: layout,
-            selected_variant_idx: std::sync::Arc::new(std::sync::RwLock::new(default_idx)),
-            selected_zones_idx: std::sync::Arc::new(std::sync::RwLock::new(0)),
+            selected_variant_idx: default_idx,
+            selected_zones_idx: 0,
             selected_zone_idx1: None,
             selected_zone_idx2: None,
         };
@@ -38,122 +41,261 @@ impl LayoutEditor {
 struct EditorWidgets {
     editor: LayoutEditor,
     variant_list: group::Scroll,
-    variant_buttons: Vec<button::Button>,
-    zone_button_scrolls: group::Group,
-    zone_button_scrolls_vector: Vec<group::Scroll>,
-    zone_button_vectors: Vec<Vec<button::Button>>,
+    zones_selection: group::Scroll,
+    zones_display: group::Group,
 }
 
 impl EditorWidgets {
 
-    fn initialize(layout: LayoutGroup) -> Self {
+    fn initialize(layout: LayoutGroup, sender: &app::Sender<Message>) -> Self {
+
+        let variant_list = Self::create_variant_list(&layout, sender);
+
+        let zones_selection = Self::create_zones_selection(&layout, sender);
+
+        let zones_display = Self::create_zones_display(&layout, sender);
 
         let editor = LayoutEditor::new(layout);
 
-        let mut variant_list = group::Scroll::default_fill().with_type(ScrollType::Vertical);
+        let mut ret = EditorWidgets {
+            editor,
+            variant_list,
+            zones_selection,
+            zones_display,
+        };
 
-        let mut variant_buttons = Vec::new();
+        ret.update_highlighted_variant(ret.editor.selected_variant_idx, ret.editor.selected_variant_idx);
 
-        let mut zone_button_scrolls = group::Group::default_fill();
+        ret.update_shown_zones_selection(ret.editor.selected_variant_idx, ret.editor.selected_variant_idx);
 
-        zone_button_scrolls.end();
+        return ret;
 
-        let mut zone_button_scrolls_vector = Vec::new();
+    }
 
-        let mut zone_button_vectors = Vec::new();
+    fn create_variant_list(layout: &LayoutGroup, sender: &app::Sender<Message>) -> group::Scroll {
 
-        let selected_variant_idx = editor.selected_variant_idx.clone();
+        let mut scroll = group::Scroll::default_fill()
+            .with_type(ScrollType::Vertical);
 
-        let selected_zones_idx = editor.selected_zones_idx.clone();
+        scroll.set_size(scroll.w()/8, scroll.h()/2);
 
-        variant_list.set_size(variant_list.w()/8, variant_list.h()/2);
+        scroll.set_color(Color::Background2);
 
-        variant_list.set_color(Color::Background2);
+        scroll.resize_callback(|s, _, _, w, _| {
 
-        for (i, variant) in editor.layout_group.get_layouts().iter().enumerate() {
+            if let Some(p) = &mut s.child(0) {
+
+                p.set_size(w, p.h());
+
+            }
+
+        });
+
+        let pack = group::Pack::default_fill()
+            .with_type(PackType::Vertical);
+
+        for i in 0..layout.layouts_len() {
+
+            let mut b = button::Button::default()
+                .with_size(0, 20);
+
+            b.set_label_size(16);
             
-            variant_list.begin();
+            b.set_color(colors::html::DodgerBlue);
+            
+            b.set_frame(FrameType::NoBox);
 
-            let mut variant_button = button::Button::default_fill();
+            if i == layout.default_idx() {
 
-            if i == editor.layout_group.default_idx() {
-
-                variant_button.set_label(format!("{i} (default)").as_str());
+                b.set_label(format!("{i} (default)").as_str());
 
             }
 
             else {
 
-                variant_button.set_label(i.to_string().as_str());
+                b.set_label(i.to_string().as_str());
 
             }
 
-            variant_button.set_label_size(16);
-            
-            variant_button.set_size(variant_button.w(), 20);
-
-            variant_button.set_color(Color::Background2);
-
-            variant_button.set_selection_color(Color::Blue);
-
-            let selected_variant_idx_clone = selected_variant_idx.clone();
-
-            variant_button.set_callback(move |_| {
-
-                *selected_variant_idx_clone.try_write().unwrap() = i;
-
-            });
-
-            variant_buttons.push(variant_button);
-
-            variant_list.end();
-
-            let mut zone_button_scroll = group::Scroll::default_fill().with_type(ScrollType::Horizontal);
-
-            let new_height = 72 + zone_button_scroll.hscrollbar().h();
-
-            zone_button_scroll.set_size(zone_button_scroll.w(), new_height);
-
-            let mut zone_button_vector = Vec::new();
-
-            for (j, zones) in variant.get_zones().iter().enumerate() {
-
-                let mut zone_button = button::Button::default().with_size(64, 64).with_label(j.to_string().as_str()).center_y(&zone_button_scroll);
-
-                zone_button.set_pos(j as i32*64 + 4, zone_button.y() - zone_button_scroll.hscrollbar().h());
-
-                zone_button.set_label_size(32);
-
-                let selected_zones_idx_clone = selected_zones_idx.clone();
-
-                zone_button.set_callback(move |_| {
-
-                    *selected_zones_idx_clone.try_write().unwrap() = j;
-
-                });
-
-                zone_button_vector.push(zone_button);
-
-            }
-
-            zone_button_scroll.end();
-
-            zone_button_scrolls.add(&zone_button_scroll);
-
-            zone_button_scrolls_vector.push(zone_button_scroll);
-
-            zone_button_vectors.push(zone_button_vector);
+            b.emit(sender.clone(), Message::VariantChanged(i));
 
         }
 
-        return EditorWidgets {
-            editor,
-            variant_list,
-            variant_buttons,
-            zone_button_scrolls,
-            zone_button_scrolls_vector,
-            zone_button_vectors,
-        };
+        pack.end();
+
+        scroll.end();
+
+        return scroll;
+
+    }
+
+    fn create_zones_selection(layout: &LayoutGroup, sender: &app::Sender<Message>) -> group::Scroll {
+
+        let mut scroll = group::Scroll::default_fill()
+            .with_type(ScrollType::Horizontal);
+
+        scroll.set_size(scroll.w()/2, 72);
+            
+        // Any styling of the scrollbar should probably happen here
+        
+        scroll.set_color(Color::Background2);
+
+        scroll.resize_callback(|s, _, _, _, h| {
+
+            if h != 72 {
+
+                s.widget_resize(s.x(), s.y(), s.w(), 72);
+
+            }
+
+        });
+
+        for variant in layout.get_layouts() {
+
+            let mut pack = group::Pack::default()
+                .with_size(scroll.w() - 8, 64)
+                .with_type(PackType::Horizontal)
+                .center_of_parent();
+
+            pack.set_spacing(4);
+
+            for j in 0..variant.get_zones().len() {
+
+                let mut b = button::Button::default()
+                    .with_size(64, 0)
+                    .with_label((j + 1).to_string().as_str());
+
+                b.emit(sender.clone(), Message::ZonesChanged(j));
+
+            }
+
+            pack.end();
+
+            pack.hide();
+
+        }
+
+        scroll.end();
+
+        return scroll;
+
+    }
+
+    fn create_zones_display(layout: &LayoutGroup, sender: &app::Sender<Message>) -> group::Group {
+
+        let mut group = group::Group::default_fill();
+
+        for variant in layout.get_layouts() {
+
+            let mut variant_group = group::Group::default_fill();
+
+            for i in 0..variant.get_zones().len() {
+
+                let mut g = Self::group_widget_from_layout_at(variant, i, sender);
+
+                g.hide();
+
+            }
+            
+            variant_group.widget_resize(variant_group.x(), variant_group.y(), variant_group.w()/2, variant_group.h()/2);
+
+            variant_group.end();
+
+            variant_group.hide();
+
+        }
+
+        group.widget_resize(group.x(), group.y(), group.w()/2, group.h()/2);
+
+        group.end();
+
+        return group;
+
+    }
+
+    fn group_widget_from_layout_at(layout: &Layout, idx: usize, sender: &app::Sender<Message>) -> group::Group {
+
+        let mut group = group::Group::default_fill();
+
+        let w = group.w()/2;
+
+        let h = group.h()/2;
+
+        group.set_size(w, h);
+
+        let zones = &layout.get_zones()[idx];
+
+        let layout_width = layout.get_monitor_rect().right as f64;
+
+        let layout_height = layout.get_monitor_rect().bottom as f64;
+
+        for (i, zone) in zones.iter().enumerate() {
+
+            let mut b = button::Button::new(
+                ((zone.left as f64*w as f64)/layout_width).round() as i32, 
+                ((zone.top as f64*h as f64)/layout_height).round() as i32, 
+                ((zone.w() as f64*w as f64)/layout_width).round() as i32, 
+                ((zone.h() as f64*h as f64)/layout_height).round() as i32, 
+                Some((i + 1).to_string().as_str())
+            );
+
+            // TODO: this frame type doesn't look too great - probably
+            // figure out how to make it look better
+            b.set_frame(FrameType::EmbossedBox);
+
+            b.set_label_size(36);
+            
+            b.set_label_color(Color::Black);
+
+            b.set_color(colors::html::LightGray);
+
+            b.set_selection_color(colors::html::DodgerBlue);
+
+            b.emit(sender.clone(), Message::ZoneChanged(i));
+
+        }
+
+        group.end();
+
+        return group;
+
+    }
+
+    fn update_highlighted_variant(&mut self, old_idx: usize, new_idx: usize) {
+
+        if let Some(p) = &self.variant_list.child(0) {
+
+            let pack = group::Pack::from_dyn_widget(p).unwrap();
+
+            if let Some(old_button) = &mut pack.child(old_idx as i32) {
+
+                old_button.set_frame(FrameType::NoBox);
+
+            }
+
+            if let Some(new_button) = &mut pack.child(new_idx as i32) {
+
+                new_button.set_frame(FrameType::UpBox);
+
+            }
+
+        }
+
+    }
+
+    fn update_shown_zones_selection(&mut self, old_idx: usize, new_idx: usize) {
+
+        if let Some(old_pack) = &mut self.zones_selection.child(old_idx as i32) {
+
+            old_pack.hide();
+
+        }
+
+        if let Some(new_pack) = &mut self.zones_selection.child(new_idx as i32) {
+
+            new_pack.show();
+
+        }
 
     }
     
@@ -162,6 +304,8 @@ impl EditorWidgets {
 pub struct LayoutEditorGUI {
     app: app::App,
     window: window::Window,
+    sender: app::Sender<Message>,
+    receiver: app::Receiver<Message>,
     editor_widgets: Option<EditorWidgets>
 }
 
@@ -176,12 +320,78 @@ impl LayoutEditorGUI {
         let widget_scheme = WidgetScheme::new(SchemeType::Fluent);
 
         widget_scheme.apply();
+
+        let (sender, receiver) = app::channel();
         
         return LayoutEditorGUI {
             app,
             window: create_window(),
+            sender,
+            receiver,
             editor_widgets: None,
         };
+
+    }
+
+    pub fn edit_layout(&mut self, layout: LayoutGroup) {
+
+        self.window.begin();
+
+        self.editor_widgets = Some(EditorWidgets::initialize(layout, &self.sender));
+
+        self.window.end();
+
+        // Test code
+
+        if let Some(editor) = &mut self.editor_widgets {
+
+            editor.zones_selection.set_pos(self.window.w()/2 - editor.zones_selection.w()/2, editor.zones_selection.y());
+
+            editor.zones_display.set_pos(self.window.w()/2 - editor.zones_display.w()/2, self.window.h()/2 - editor.zones_display.h()/2);
+
+        }
+
+    }
+
+    fn handle_events(&mut self) {
+
+        let editor_widgets = match &mut self.editor_widgets {
+            
+            Some(val) => val,
+        
+            None => return,
+        
+        };
+
+        if let Some(msg) = self.receiver.recv() {
+
+            match msg {
+
+                Message::VariantChanged(idx) => {
+
+                    let old_idx = editor_widgets.editor.selected_variant_idx;
+
+                    editor_widgets.editor.selected_variant_idx = idx;
+
+                    editor_widgets.update_highlighted_variant(old_idx, idx);
+
+                    editor_widgets.update_shown_zones_selection(old_idx, idx);
+
+                },
+                
+                Message::ZonesChanged(idx) => {
+
+                    println!("zones changed to {idx}");
+
+                },
+                
+                Message::ZoneChanged(idx) => {
+
+                },
+            
+            }
+
+        }
 
     }
 
@@ -189,13 +399,11 @@ impl LayoutEditorGUI {
 
         self.window.show();
 
-        self.app.run().unwrap();
+        while self.app.wait() {
 
-    }
+            self.handle_events();
 
-    fn edit_layout(&mut self, layout: LayoutGroup) {
-
-
+        }
 
     }
 
@@ -225,48 +433,5 @@ fn create_window() -> window::Window {
         window.end();
 
         return window;
-
-}
-
-fn group_widget_from_layout_at(layout: &Layout, idx: usize) -> group::Group {
-
-    let mut group = group::Group::default_fill();
-
-    let w = group.w()/2;
-
-    let h = group.h()/2;
-
-    group.set_size(w, h);
-
-    let zones = &layout.get_zones()[idx];
-
-    let layout_width = layout.get_monitor_rect().right as f64;
-
-    let layout_height = layout.get_monitor_rect().bottom as f64;
-
-    for (i, zone) in zones.iter().enumerate() {
-
-        let mut button = button::Button::new(
-            ((zone.left as f64*w as f64)/layout_width).round() as i32, 
-            ((zone.top as f64*h as f64)/layout_height).round() as i32, 
-            ((zone.w() as f64*w as f64)/layout_width).round() as i32, 
-            ((zone.h() as f64*h as f64)/layout_height).round() as i32, 
-            Some(i.to_string().as_str())
-        );
-
-        // TODO: this frame type doesn't look too great - probably
-        // figure out how to make it look better
-        button.set_frame(FrameType::EmbossedBox);
-
-        // TODO: set the actual colours
-        button.set_color(Color::Blue);
-
-        button.set_selection_color(Color::Magenta);
-
-    }
-
-    group.end();
-
-    return group;
 
 }

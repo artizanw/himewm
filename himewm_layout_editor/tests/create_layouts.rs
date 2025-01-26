@@ -1,6 +1,5 @@
 use directories::UserDirs;
 
-use fltk::prelude::GroupExt;
 use himewm_layout::*;
 
 #[test]
@@ -26,7 +25,7 @@ fn create_vertical_stack() {
 
         if n != 5 {
 
-            layout_group.new_variant();
+            layout_group.new_variant_from(layout_group.default_idx());
 
             idx += 1;
 
@@ -75,7 +74,7 @@ fn create_spiral() {
 
         if n != 5 {
 
-            layout_group.new_variant();
+            layout_group.new_variant_from(layout_group.default_idx());
 
             idx += 1;
 
@@ -103,32 +102,5 @@ fn export_layout_to_downloads(layout: &LayoutGroup, name: &str) -> std::io::Resu
     serde_json::to_writer_pretty(output_file, layout).unwrap();
 
     return Ok(());
-
-}
-
-#[test]
-fn show_layout() {
-
-    let mut layout_group = LayoutGroup::new(1920, 1200);
-
-    let idx = layout_group.default_idx();
-
-    let variant = &mut layout_group.get_layouts_mut()[idx];
-
-    variant.new_zone_vec();
-
-    variant.split(1, 0, SplitDirection::Vertical(960));
-
-    variant.new_zone_vec_from(1);
-
-    variant.split(2, 1, SplitDirection::Horizontal(600));
-
-    variant.extend();
-
-    let mut gui = himewm_layout_editor::LayoutEditorGUI::create();
-
-    gui.window.add(&gui.group_widget_from_layout_at(variant, 3));
-
-    gui.run();
 
 }
