@@ -1873,7 +1873,9 @@ impl WindowManager {
 
             match SetWindowPos(*hwnd, None, positions[i].x, positions[i].y, positions[i].cx, positions[i].cy, SWP_NOZORDER) {
 
-                Err(_) if GetLastError().0 == 5 => {
+                Ok(_) => continue,
+
+                Err(_) => {
 
                     match &mut error_indices {
 
@@ -1889,11 +1891,13 @@ impl WindowManager {
 
                     self.hwnd_locations.remove(&hwnd.0);
 
-                    self.ignored_hwnds.insert(hwnd.0);
+                    if GetLastError().0 == 5 {
+                    
+                        self.ignored_hwnds.insert(hwnd.0);
+
+                    }
 
                 },
-
-                _ => continue,
 
             }
 
