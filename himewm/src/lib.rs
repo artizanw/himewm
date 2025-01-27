@@ -1512,7 +1512,13 @@ impl WindowManager {
 
         if GetDpiForWindow(foreground_hwnd) != original_dpi {
 
-            self.update_workspace(window_desktop_id, new_monitor_id);
+            let workspace = self.workspaces.get(&(window_desktop_id, new_monitor_id.0)).unwrap();
+
+            let layout = &self.layouts.get(&new_monitor_id.0).unwrap()[workspace.layout_idx].get_layouts()[workspace.variant_idx];
+
+            let position = &layout.get_positions_at(workspace.managed_window_handles.len() - 1)[workspace.managed_window_handles.len() - 1];
+
+            let _ = SetWindowPos(foreground_hwnd, None, position.x, position.y, position.cx, position.cy, SWP_NOZORDER);
 
         }
 
@@ -1636,7 +1642,13 @@ impl WindowManager {
 
         if GetDpiForWindow(foreground_hwnd) != original_dpi {
 
-            self.update_workspace(window_desktop_id, new_monitor_id);
+            let workspace = self.workspaces.get(&(window_desktop_id, new_monitor_id.0)).unwrap();
+
+            let layout = &self.layouts.get(&new_monitor_id.0).unwrap()[workspace.layout_idx].get_layouts()[workspace.variant_idx];
+
+            let position = &layout.get_positions_at(workspace.managed_window_handles.len() - 1)[workspace.managed_window_handles.len() - 1];
+
+            let _ = SetWindowPos(foreground_hwnd, None, position.x, position.y, position.cx, position.cy, SWP_NOZORDER);
 
         }
 
@@ -1727,8 +1739,14 @@ impl WindowManager {
             self.update_workspace(original_window_desktop_id, new_monitor_id);
 
             if GetDpiForWindow(grabbed_window) != original_dpi {
-            
-                self.update_workspace(original_window_desktop_id, new_monitor_id);
+
+                let workspace = self.workspaces.get(&(original_window_desktop_id, new_monitor_id.0)).unwrap();
+
+                let layout = &self.layouts.get(&new_monitor_id.0).unwrap()[workspace.layout_idx].get_layouts()[workspace.variant_idx];
+
+                let position = &layout.get_positions_at(workspace.managed_window_handles.len() - 1)[new_idx];
+
+                let _ = SetWindowPos(grabbed_window, None, position.x, position.y, position.cx, position.cy, SWP_NOZORDER);
 
             }
 
