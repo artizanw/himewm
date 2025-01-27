@@ -45,16 +45,18 @@ pub mod messages {
     use windows::Win32::UI::WindowsAndMessaging::WM_APP;
     
     pub const WINDOW_CREATED: u32 = WM_APP + 1;
+    
+    pub const WINDOW_RESTORED: u32 = WM_APP + 2;
 
-    pub const WINDOW_DESTROYED: u32 = WM_APP + 2;
+    pub const WINDOW_DESTROYED: u32 = WM_APP + 3;
     
-    pub const WINDOW_MINIMIZED_OR_MAXIMIZED: u32 = WM_APP + 3;
+    pub const WINDOW_MINIMIZED_OR_MAXIMIZED: u32 = WM_APP + 4;
     
-    pub const WINDOW_CLOAKED: u32 = WM_APP + 4;
+    pub const WINDOW_CLOAKED: u32 = WM_APP + 5;
     
-    pub const FOREGROUND_WINDOW_CHANGED: u32 = WM_APP + 5;
+    pub const FOREGROUND_WINDOW_CHANGED: u32 = WM_APP + 6;
 
-    pub const WINDOW_MOVE_FINISHED: u32 = WM_APP + 6;
+    pub const WINDOW_MOVE_FINISHED: u32 = WM_APP + 7;
 
 }
 
@@ -2071,7 +2073,7 @@ impl WindowManager {
 
                 if is_restored(hwnd) {
 
-                    PostMessageA(None, messages::WINDOW_CREATED, WPARAM(hwnd.0 as usize), LPARAM::default()).unwrap();
+                    PostMessageA(None, messages::WINDOW_RESTORED, WPARAM(hwnd.0 as usize), LPARAM::default()).unwrap();
 
                 }
 
@@ -2135,8 +2137,7 @@ impl WindowManager {
 
         if 
             !IsWindowVisible(hwnd).as_bool() ||
-            !has_sizebox(hwnd) ||
-            IsIconic(hwnd).as_bool()
+            !has_sizebox(hwnd)
         {
             
             return true.into();
@@ -2290,6 +2291,12 @@ pub unsafe fn handle_message(msg: MSG, wm: &mut WindowManager) {
     match msg.message {
 
         messages::WINDOW_CREATED => {
+
+            wm.window_created(HWND(msg.wParam.0 as *mut core::ffi::c_void));
+
+        },
+
+        messages::WINDOW_RESTORED if wm.hwnd_locations.contains_key(&(msg.wParam.0 as *mut core::ffi::c_void)) => {
 
             wm.window_created(HWND(msg.wParam.0 as *mut core::ffi::c_void));
 
