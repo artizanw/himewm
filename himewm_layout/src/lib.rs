@@ -185,6 +185,8 @@ impl Layout {
         
         self.zones.remove(i);
 
+        self.manual_zones_until -= 1;
+
     }
 
     pub fn swap_zone_vectors(&mut self, i: usize, j: usize) {
