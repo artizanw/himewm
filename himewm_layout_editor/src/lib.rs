@@ -68,6 +68,10 @@ impl EditorWidgets {
 
         ret.update_shown_zones_selection(ret.editor.selected_variant_idx, ret.editor.selected_variant_idx);
 
+        ret.update_highlighted_zones_button((ret.editor.selected_variant_idx, ret.editor.selected_zones_idx), (ret.editor.selected_variant_idx, ret.editor.selected_zones_idx));
+
+        ret.update_shown_zones((ret.editor.selected_variant_idx, ret.editor.selected_zones_idx), (ret.editor.selected_variant_idx, ret.editor.selected_zones_idx));
+
         return ret;
 
     }
@@ -159,11 +163,15 @@ impl EditorWidgets {
 
             pack.set_spacing(4);
 
-            for j in 0..variant.get_zones().len() {
+            for j in 0..variant.manual_zones_until() {
 
                 let mut b = button::Button::default()
                     .with_size(64, 0)
                     .with_label((j + 1).to_string().as_str());
+
+                b.set_color(Color::Background2);
+
+                b.set_selection_color(Color::Background);
 
                 b.emit(sender.clone(), Message::ZonesChanged(j));
 
@@ -189,7 +197,7 @@ impl EditorWidgets {
 
             let mut variant_group = group::Group::default_fill();
 
-            for i in 0..variant.get_zones().len() {
+            for i in 0..variant.manual_zones_until() {
 
                 let mut g = Self::group_widget_from_layout_at(variant, i, sender);
 
@@ -247,7 +255,7 @@ impl EditorWidgets {
             
             b.set_label_color(Color::Black);
 
-            b.set_color(colors::html::LightGray);
+            b.set_color(colors::html::Gainsboro);
 
             b.set_selection_color(colors::html::DodgerBlue);
 
@@ -296,6 +304,64 @@ impl EditorWidgets {
             new_pack.show();
 
         }
+
+    }
+
+    fn update_highlighted_zones_button(&mut self, old_idx: (usize, usize), new_idx: (usize, usize)) {
+
+        if let Some(old_pack) = &mut self.zones_selection.child(old_idx.0 as i32) {
+
+            if let Some(old_button) = &mut group::Pack::from_dyn_widget(old_pack).unwrap().child(old_idx.1 as i32) {
+
+                old_button.set_color(Color::Background2);
+
+            }
+
+            old_pack.hide();
+
+        }
+
+        if let Some(new_pack) = &mut self.zones_selection.child(new_idx.0 as i32) {
+
+            if let Some(new_button) = &mut group::Pack::from_dyn_widget(new_pack).unwrap().child(new_idx.1 as i32) {
+
+                new_button.set_color(colors::html::DimGray);
+
+            }
+
+            new_pack.show();
+
+        }
+
+    }
+
+    fn update_shown_zones(&mut self, old_idx: (usize, usize), new_idx: (usize, usize)) {
+
+        if let Some(old_variant_group) = &mut self.zones_display.child(old_idx.0 as i32) {
+
+            if let Some(old_group) = &mut group::Group::from_dyn_widget(old_variant_group).unwrap().child(old_idx.1 as i32) {
+
+                old_group.hide();
+
+            }
+
+            old_variant_group.hide();
+
+        }
+
+        if let Some(new_variant_group) = &mut self.zones_display.child(new_idx.0 as i32) {
+
+            if let Some(new_group) = &mut group::Group::from_dyn_widget(new_variant_group).unwrap().child(new_idx.1 as i32) {
+
+                new_group.show();
+
+            }
+
+            new_variant_group.show();
+
+        }
+
+
 
     }
     
@@ -369,19 +435,35 @@ impl LayoutEditorGUI {
 
                 Message::VariantChanged(idx) => {
 
-                    let old_idx = editor_widgets.editor.selected_variant_idx;
+                    let old_variant_idx = editor_widgets.editor.selected_variant_idx;
+
+                    let old_zones_idx = editor_widgets.editor.selected_zones_idx;
 
                     editor_widgets.editor.selected_variant_idx = idx;
 
-                    editor_widgets.update_highlighted_variant(old_idx, idx);
+                    editor_widgets.editor.selected_zones_idx = 0;
 
-                    editor_widgets.update_shown_zones_selection(old_idx, idx);
+                    editor_widgets.update_highlighted_variant(old_variant_idx, idx);
+
+                    editor_widgets.update_shown_zones_selection(old_variant_idx, idx);
+
+                    editor_widgets.update_highlighted_zones_button((old_variant_idx, old_zones_idx), (idx, 0));
+
+                    editor_widgets.update_shown_zones((old_variant_idx, old_zones_idx), (idx, 0));
 
                 },
                 
                 Message::ZonesChanged(idx) => {
 
-                    println!("zones changed to {idx}");
+                    let variant_idx = editor_widgets.editor.selected_variant_idx;
+
+                    let old_idx = editor_widgets.editor.selected_zones_idx;
+
+                    editor_widgets.editor.selected_zones_idx = idx;
+
+                    editor_widgets.update_highlighted_zones_button((variant_idx, old_idx), (variant_idx, idx));
+
+                    editor_widgets.update_shown_zones((variant_idx, old_idx), (variant_idx, idx));
 
                 },
                 
