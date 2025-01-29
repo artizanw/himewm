@@ -231,7 +231,7 @@ impl Layout {
             
             EndTilingBehaviour::Directional { direction: _, start_from, from_zones, zone_idx: _ } if *start_from > 1 && matches!(from_zones, None) => {
 
-                *from_zones = Some(self.zones.remove(self.zones.len() - 1));
+                *from_zones = self.zones.pop();
 
                 self.manual_zones_until -= 1;
 
@@ -590,6 +590,12 @@ impl Layout {
 
             }
 
+            else {
+
+                return;
+
+            }
+
         }
 
         else if 
@@ -608,6 +614,18 @@ impl Layout {
                 self.zones[i][first_idx].left = self.zones[i][second_idx].left;
 
             }
+
+            else {
+
+                return;
+
+            }
+
+        }
+
+        else {
+
+            return;
 
         }
 
@@ -630,6 +648,22 @@ impl Layout {
         let (first_slice, second_slice) = self.zones[i].split_at_mut(second_idx);
         
         std::mem::swap(&mut first_slice[first_idx], &mut second_slice[0]);
+
+    }
+
+    pub fn merge_and_split_zones(&mut self, i: usize, j: usize, k: usize, direction: SplitDirection) {
+        
+        let first_idx = std::cmp::min(j, k);
+        
+        let second_idx = std::cmp::max(j, k);
+
+        self.merge_zones(i, j, k);
+        
+        self.split(i, first_idx, direction);
+        
+        let zone = self.zones[i].pop().unwrap();
+
+        self.zones[i].insert(second_idx, zone);
 
     }
 

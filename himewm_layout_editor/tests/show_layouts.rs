@@ -42,7 +42,7 @@ fn show_layout() {
 
     new_variant.new_zone_vec_from(3);
     new_variant.split(4, 0, SplitDirection::Vertical(640));
-    new_variant.swap_zones(4, 0, 2);
+    new_variant.merge_and_split_zones(4, 2, 1, SplitDirection::Vertical(1440));
     let mut gui = himewm_layout_editor::LayoutEditorGUI::create();
 
     gui.edit_layout(layout_group);
